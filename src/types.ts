@@ -1,5 +1,3 @@
-// import { Component, JSX } from "voby";
-
 export type Params = Record<string, string>;
 
 export type SetParams = Record<string, string | number | boolean | null | undefined>;

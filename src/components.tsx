@@ -140,8 +140,8 @@ export const Routes = (props: RoutesProps) => {
 
   return (
     <If when={routeStates() && root}>
-      {(route: RouteContext) => (
-        <RouteContextObj.Provider value={route}>{route.outlet()}</RouteContextObj.Provider>
+      {(route) => (
+        <RouteContextObj.Provider value={route()}>{route().outlet()}</RouteContextObj.Provider>
       )}
     </If>
   );
@@ -172,8 +172,8 @@ export const Outlet = () => {
   const route = useRoute();
   return (
     <If when={route.child}>
-      {(child: RouteContext) => (
-        <RouteContextObj.Provider value={child}>{child.outlet()}</RouteContextObj.Provider>
+      {(child) => (
+        <RouteContextObj.Provider value={child()}>{child().outlet()}</RouteContextObj.Provider>
       )}
     </If>
   );
