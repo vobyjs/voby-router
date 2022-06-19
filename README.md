@@ -21,7 +21,6 @@ Use it freely with suspense, resources, and lazy components. Voby router also al
   - [useNavigate](#usenavigate)
   - [useLocation](#uselocation)
   - [useSearchParams](#usesearchparams)
-  - [useIsRouting](#useisrouting)
   - [useRouteData](#useroutedata)
   - [useMatch](#usematch)
   - [useRoutes](#useroutes)
@@ -462,20 +461,6 @@ return (
   <div>
     <span>Page: {searchParams.page}</span>
     <button onClick={() => setSearchParams({ page: searchParams.page + 1 })}>Next Page</button>
-  </div>
-);
-```
-
-### useIsRouting
-
-Retrieves signal that indicates whether the route is currently in a Transition. Useful for showing stale/pending state when the route resolution is Suspended during concurrent rendering.
-
-```js
-const isRouting = useIsRouting();
-
-return (
-  <div classList={{ "grey-out": isRouting() }}>
-    <MyAwesomeConent />
   </div>
 );
 ```

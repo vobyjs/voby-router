@@ -1,10 +1,11 @@
 import { defineConfig } from 'tsup';
+import voby from 'voby-esbuild';
 
 export default defineConfig({
   clean: true,
   dts: true,
   entry: ['src/index.tsx'],
-  minify: true,
-  sourcemap: true,
+  esbuildPlugins: [voby()],
   format: ['esm'],
+  name: 'voby-router',
 });

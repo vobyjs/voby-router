@@ -1,29 +1,33 @@
-import { Observable, ObservableReadonly, useComputed, useSample } from "voby";
-import type { Params, PathMatch, Route, SetParams } from "./types";
+import { Observable, ObservableReadonly, useComputed, useSample } from 'voby';
+import type { Params, PathMatch, Route, SetParams } from 'types';
 
 const hasSchemeRegex = /^(?:[a-z0-9]+:)?\/\//i;
 const trimPathRegex = /^\/+|\/+$/g;
 
 function normalize(path: string, omitSlash: boolean = false) {
-  const s = path.replace(trimPathRegex, "");
-  return s ? (omitSlash || /^[?#]/.test(s) ? s : "/" + s) : "";
+  const s = path.replace(trimPathRegex, '');
+  return s ? (omitSlash || /^[?#]/.test(s) ? s : '/' + s) : '';
 }
 
-export function resolvePath(base: string, path: string, from?: string): string | undefined {
+export function resolvePath(
+  base: string,
+  path: string,
+  from?: string
+): string | undefined {
   if (hasSchemeRegex.test(path)) {
     return undefined;
   }
   const basePath = normalize(base);
   const fromPath = from && normalize(from);
-  let result = "";
-  if (!fromPath || path.startsWith("/")) {
+  let result = '';
+  if (!fromPath || path.startsWith('/')) {
     result = basePath;
   } else if (fromPath.toLowerCase().indexOf(basePath.toLowerCase()) !== 0) {
     result = basePath + fromPath;
   } else {
     result = fromPath;
   }
-  return (result || "/") + normalize(path, !result);
+  return (result || '/') + normalize(path, !result);
 }
 
 export function invariant<T>(value: T | null | undefined, message: string): T {
@@ -34,7 +38,7 @@ export function invariant<T>(value: T | null | undefined, message: string): T {
 }
 
 export function joinPaths(from: string, to: string): string {
-  return normalize(from).replace(/\/*(\*.*)?$/g, "") + normalize(to);
+  return normalize(from).replace(/\/*(\*.*)?$/g, '') + normalize(to);
 }
 
 export function extractSearchParams(url: URL): Params {
@@ -46,23 +50,23 @@ export function extractSearchParams(url: URL): Params {
 }
 
 export function urlDecode(str: string, isQuery?: boolean) {
-  return decodeURIComponent(isQuery ? str.replace(/\+/g, " ") : str);
+  return decodeURIComponent(isQuery ? str.replace(/\+/g, ' ') : str);
 }
 
 export function createMatcher(path: string, partial?: boolean) {
-  const [pattern, splat] = path.split("/*", 2);
-  const segments = pattern.split("/").filter(Boolean);
+  const [pattern, splat] = path.split('/*', 2);
+  const segments = pattern.split('/').filter(Boolean);
   const len = segments.length;
 
   return (location: string): PathMatch | null => {
-    const locSegments = location.split("/").filter(Boolean);
+    const locSegments = location.split('/').filter(Boolean);
     const lenDiff = locSegments.length - len;
     if (lenDiff < 0 || (lenDiff > 0 && splat === undefined && !partial)) {
       return null;
     }
 
     const match: PathMatch = {
-      path: len ? "" : "/",
+      path: len ? '' : '/',
       params: {},
     };
 
@@ -70,16 +74,22 @@ export function createMatcher(path: string, partial?: boolean) {
       const segment = segments[i];
       const locSegment = locSegments[i];
 
-      if (segment[0] === ":") {
+      if (segment[0] === ':') {
         match.params[segment.slice(1)] = locSegment;
-      } else if (segment.localeCompare(locSegment, undefined, { sensitivity: "base" }) !== 0) {
+      } else if (
+        segment.localeCompare(locSegment, undefined, {
+          sensitivity: 'base',
+        }) !== 0
+      ) {
         return null;
       }
       match.path += `/${locSegment}`;
     }
 
     if (splat) {
-      match.params[splat] = lenDiff ? locSegments.slice(-lenDiff).join("/") : "";
+      match.params[splat] = lenDiff
+        ? locSegments.slice(-lenDiff).join('/')
+        : '';
     }
 
     return match;
@@ -87,15 +97,17 @@ export function createMatcher(path: string, partial?: boolean) {
 }
 
 export function scoreRoute(route: Route): number {
-  const [pattern, splat] = route.pattern.split("/*", 2);
-  const segments = pattern.split("/").filter(Boolean);
+  const [pattern, splat] = route.pattern.split('/*', 2);
+  const segments = pattern.split('/').filter(Boolean);
   return segments.reduce(
-    (score, segment) => score + (segment.startsWith(":") ? 2 : 3),
+    (score, segment) => score + (segment.startsWith(':') ? 2 : 3),
     segments.length - (splat === undefined ? 0 : 1)
   );
 }
 
-export function createMemoObject<T extends Record<string | symbol, unknown>>(fn: () => T): T {
+export function createMemoObject<T extends Record<string | symbol, unknown>>(
+  fn: () => T
+): T {
   const map = new Map();
   return new Proxy(<T>{}, {
     get(_, property) {
@@ -122,14 +134,14 @@ export function createMemoObject<T extends Record<string | symbol, unknown>>(fn:
 export function mergeSearchString(search: string, params: SetParams) {
   const merged = new URLSearchParams(search);
   Object.entries(params).forEach(([key, value]) => {
-    if (value == null || value === "") {
+    if (value == null || value === '') {
       merged.delete(key);
     } else {
       merged.set(key, String(value));
     }
   });
   const s = merged.toString();
-  return s ? `?${s}` : "";
+  return s ? `?${s}` : '';
 }
 
 export function on<T>(deps: () => void, fn: () => T): ObservableReadonly<T> {
@@ -139,8 +151,34 @@ export function on<T>(deps: () => void, fn: () => T): ObservableReadonly<T> {
   });
 }
 
-export function useSignal<T>(observable: Observable<T>): [() => T, (value: T) => void] {
+export function useSignal<T>(
+  observable: Observable<T>
+): [() => T, (value: T) => void] {
   const get = () => observable();
   const set = (value: T) => observable(value);
   return [get, set];
+}
+
+export function expandOptionals(pattern: string): string[] {
+  let match = /(\/?\:[^\/]+)\?/.exec(pattern);
+  if (!match) return [pattern];
+
+  let prefix = pattern.slice(0, match.index);
+  let suffix = pattern.slice(match.index + match[0].length);
+  const prefixes: string[] = [prefix, (prefix += match[1])];
+
+  // This section handles adjacent optional params. We don't actually want all permutations since
+  // that will lead to equivalent routes which have the same number of params. For example
+  // `/:a?/:b?/:c`? only has the unique expansion: `/`, `/:a`, `/:a/:b`, `/:a/:b/:c` and we can
+  // discard `/:b`, `/:c`, `/:b/:c` by building them up in order and not recursing. This also helps
+  // ensure predictability where earlier params have precidence.
+  while ((match = /^(\/\:[^\/]+)\?/.exec(suffix))) {
+    prefixes.push((prefix += match[1]));
+    suffix = suffix.slice(match[0].length);
+  }
+
+  return expandOptionals(suffix).reduce<string[]>(
+    (results, expansion) => [...results, ...prefixes.map(p => p + expansion)],
+    []
+  );
 }

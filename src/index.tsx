@@ -1,17 +1,17 @@
-export * from "./components";
-export * from "./integration";
+export * from 'components';
+export * from 'integration';
 export {
   useRouteData,
   useHref,
-  useIsRouting,
+  // useIsRouting,
   useLocation,
   useMatch,
   useNavigate,
   useParams,
   useResolvedPath,
   useSearchParams,
-} from "./routing";
-export { mergeSearchString as _mergeSearchString } from "./utils";
+} from './routing';
+export { mergeSearchString as _mergeSearchString } from 'utils';
 export type {
   Location,
   LocationChange,
@@ -27,4 +27,4 @@ export type {
   RouterOutput,
   RouterUtils,
   SetParams,
-} from "./types";
+} from 'types';

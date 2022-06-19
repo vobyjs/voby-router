@@ -9,8 +9,22 @@ import {
   createElement,
   useEffect,
   useCleanup,
-} from "voby";
-import { normalizeIntegration } from "./integration";
+  useResolved,
+} from 'voby';
+import { normalizeIntegration } from 'integration';
+import {
+  createMemoObject,
+  extractSearchParams,
+  invariant,
+  resolvePath,
+  createMatcher,
+  joinPaths,
+  scoreRoute,
+  mergeSearchString,
+  urlDecode,
+  on,
+  expandOptionals,
+} from 'utils';
 import type {
   Branch,
   Location,
@@ -29,19 +43,8 @@ import type {
   RouterIntegration,
   RouterOutput,
   SetParams,
-} from "./types";
-import {
-  createMemoObject,
-  extractSearchParams,
-  invariant,
-  resolvePath,
-  createMatcher,
-  joinPaths,
-  scoreRoute,
-  mergeSearchString,
-  urlDecode,
-  on,
-} from "./utils";
+} from 'types';
+import type { FunctionMaybe } from 'voby';
 
 const MAX_REDIRECTS = 100;
 
@@ -53,17 +56,25 @@ export const RouterContextObj = createContext<RouterContext>();
 export const RouteContextObj = createContext<RouteContext>();
 
 export const useRouter = () =>
-  invariant(useContext(RouterContextObj), "Make sure your app is wrapped in a <Router />");
+  invariant(
+    useContext(RouterContextObj),
+    'Make sure your app is wrapped in a <Router />'
+  );
 
 let TempRoute: RouteContext | undefined;
-export const useRoute = () => TempRoute || useContext(RouteContextObj) || useRouter().base;
+export const useRoute = () =>
+  TempRoute || useContext(RouteContextObj) || useRouter().base;
 
-export const useResolvedPath = (path: () => string): ObservableReadonly<string | undefined> => {
+export const useResolvedPath = (
+  path: () => string
+): ObservableReadonly<string | undefined> => {
   const route = useRoute();
   return useComputed(() => route.resolvePath(path()));
 };
 
-export const useHref = (to: () => string | undefined): ObservableReadonly<string | undefined> => {
+export const useHref = (
+  to: () => string | undefined
+): ObservableReadonly<string | undefined> => {
   const router = useRouter();
   return useComputed(() => {
     const to_ = to();
@@ -72,10 +83,13 @@ export const useHref = (to: () => string | undefined): ObservableReadonly<string
 };
 
 export const useNavigate = () => useRouter().navigatorFactory();
-export const useLocation = <S = unknown>() => useRouter().location as Location<S>;
-export const useIsRouting = () => useRouter().isRouting;
+export const useLocation = <S = unknown>() =>
+  useRouter().location as Location<S>;
+// export const useIsRouting = () => useRouter().isRouting;
 
-export const useMatch = (path: () => string): ObservableReadonly<PathMatch | null> => {
+export const useMatch = (
+  path: () => string
+): ObservableReadonly<PathMatch | null> => {
   const location = useLocation();
   const matcher = useComputed(() => createMatcher(path()));
   return useComputed(() => matcher()(location.pathname));
@@ -91,39 +105,81 @@ export const useSearchParams = <T extends Params>(): [
 ] => {
   const location = useLocation();
   const navigate = useNavigate();
-  const setSearchParams = (params: SetParams, options?: Partial<NavigateOptions>) => {
-    const searchString = useSample(() => mergeSearchString(location.search, params));
+  const setSearchParams = (
+    params: SetParams,
+    options?: Partial<NavigateOptions>
+  ) => {
+    const searchString = useSample(() =>
+      mergeSearchString(location.search, params)
+    );
     navigate(searchString, { scroll: false, ...options, resolve: true });
   };
   return [location.query as T, setSearchParams];
 };
 
-export function createRoute(
-  routeDef: RouteDefinition,
-  base: string = "",
-  fallback?: JSX.Component
-): Route {
-  const { path: originalPath, component, data, children } = routeDef;
-  const isLeaf = !children || (Array.isArray(children) && !children.length);
-  const path = joinPaths(base, originalPath);
-  const pattern = isLeaf ? path : path.split("/*", 1)[0];
+function asArray<T>(value: T | T[]): T[] {
+  return Array.isArray(value) ? value : [value];
+}
 
-  return {
-    originalPath,
-    pattern,
+export function createRoutes(
+  routeDef: RouteDefinition,
+  base: string = '',
+  fallback?: JSX.Component
+): Route[] {
+  const { component, data, children } = routeDef;
+  const isLeaf = !children || (Array.isArray(children) && !children.length);
+  // const path = joinPaths(base, originalPath);
+  // const pattern = isLeaf ? path : path.split('/*', 1)[0];
+
+  const shared = {
+    key: routeDef,
     element: component
       ? () => createElement(component, {})
       : () => {
           const { element } = routeDef;
-          return element === undefined && fallback ? createElement(fallback, {}) : element;
+          return element === undefined && fallback
+            ? createElement(fallback, {})
+            : element;
         },
     preload: routeDef.component
       ? (component as MaybePreloadableComponent).preload
       : routeDef.preload,
-    data,
-    matcher: createMatcher(pattern, !isLeaf),
+    data
   };
+
+  return asArray(routeDef.path).reduce<Route[]>((acc, path) => {
+    for (const originalPath of expandOptionals(path)) {
+      const path = joinPaths(base, originalPath);
+      const pattern = isLeaf ? path : path.split("/*", 1)[0];
+      acc.push({
+        ...shared,
+        originalPath,
+        pattern,
+        matcher: createMatcher(pattern, !isLeaf)
+      });
+    }
+    return acc;
+  }, []);
 }
+
+//   return {
+//     originalPath,
+//     pattern,
+//     element: component
+//       ? () => createElement(component, {})
+//       : () => {
+//           const { element } = routeDef;
+//           return element === undefined && fallback
+//             ? createElement(fallback, {})
+//             : element;
+//         },
+//     preload: routeDef.component
+//       ? (component as MaybePreloadableComponent).preload
+//       : routeDef.preload,
+//     data,
+//     matcher: createMatcher(pattern, !isLeaf),
+//   };
+// }
 
 export function createBranch(routes: Route[], index: number = 0): Branch {
   return {
@@ -148,29 +204,30 @@ export function createBranch(routes: Route[], index: number = 0): Branch {
 }
 
 export function createBranches(
-  routeDef: RouteDefinition | RouteDefinition[],
-  base: string = "",
+  routeDef: FunctionMaybe<RouteDefinition | RouteDefinition[]>,
+  base: string = '',
   fallback?: JSX.Component,
   stack: Route[] = [],
   branches: Branch[] = []
 ): Branch[] {
-  const routeDefs = Array.isArray(routeDef) ? routeDef : [routeDef];
+  const routeDefs = asArray(useResolved(routeDef, true));
 
   for (let i = 0, len = routeDefs.length; i < len; i++) {
     const def = routeDefs[i];
     if (def && typeof def === "object" && def.hasOwnProperty("path")) {
-      const route = createRoute(def, base, fallback);
+      const routes = createRoutes(def, base, fallback);
+      for (const route of routes) {
+        stack.push(route);
 
-      stack.push(route);
+        if (def.children) {
+          createBranches(def.children, route.pattern, fallback, stack, branches);
+        } else {
+          const branch = createBranch([...stack], branches.length);
+          branches.push(branch);
+        }
 
-      if (def.children) {
-        createBranches(def.children, route.pattern, fallback, stack, branches);
-      } else {
-        const branch = createBranch([...stack], branches.length);
-        branches.push(branch);
+        stack.pop();
       }
-
-      stack.pop();
     }
   }
 
@@ -178,7 +235,10 @@ export function createBranches(
   return stack.length ? branches : branches.sort((a, b) => b.score - a.score);
 }
 
-export function getRouteMatches(branches: Branch[], location: string): RouteMatch[] {
+export function getRouteMatches(
+  branches: Branch[],
+  location: string
+): RouteMatch[] {
   for (let i = 0, len = branches.length; i < len; i++) {
     const match = branches[i].matcher(location);
     if (match) {
@@ -187,8 +247,11 @@ export function getRouteMatches(branches: Branch[], location: string): RouteMatc
   }
   return [];
 }
-let prevUrl = new URL("http://sar");
-export function createLocation(path: Observable<string>, state: Observable<any>): Location {
+let prevUrl = new URL('http://sar');
+export function createLocation(
+  path: Observable<string>,
+  state: Observable<any>
+): Location {
   const url = useComputed<URL>(
     () => {
       const path_ = path();
@@ -209,7 +272,7 @@ export function createLocation(path: Observable<string>, state: Observable<any>)
   const pathname = useComputed(() => urlDecode(url().pathname));
   const search = useComputed(() => urlDecode(url().search, true));
   const hash = useComputed(() => urlDecode(url().hash));
-  const key = useComputed(() => "");
+  const key = useComputed(() => '');
 
   return {
     get pathname() {
@@ -233,7 +296,7 @@ export function createLocation(path: Observable<string>, state: Observable<any>)
 
 export function createRouterContext(
   integration?: RouterIntegration | LocationChangeSignal,
-  base: string = "",
+  base: string = '',
   data?: RouteDataFunc,
   out?: object
 ): RouterContext {
@@ -245,7 +308,7 @@ export function createRouterContext(
   const parsePath = utils.parsePath || ((p) => p);
   const renderPath = utils.renderPath || ((p) => p);
 
-  const basePath = resolvePath("", base);
+  const basePath = resolvePath('', base);
   const output = out
     ? (Object.assign(out, {
         matches: [],
@@ -259,7 +322,7 @@ export function createRouterContext(
     setSource({ value: basePath, replace: true, scroll: false });
   }
 
-  const [isRouting, start] = useTransition();
+  // const [isRouting, start] = useTransition();
   const reference$ = $(source().value);
   const state$ = $(source().state);
   const location = createLocation(reference$, state$);
@@ -296,13 +359,13 @@ export function createRouterContext(
   ) {
     // Untrack in case someone navigates in an effect - don't want to track `reference` or route paths
     useSample(() => {
-      if (typeof to === "number") {
+      if (typeof to === 'number') {
         if (!to) {
           // A delta of 0 means stay at the current location, so it is ignored
         } else if (utils.go) {
           utils.go(to);
         } else {
-          console.warn("Router integration does not support relative routing");
+          console.warn('Router integration does not support relative routing');
         }
         return;
       }
@@ -319,30 +382,35 @@ export function createRouterContext(
         ...options,
       };
 
-      const resolvedTo = resolve ? route.resolvePath(to) : resolvePath("", to);
+      const resolvedTo = resolve ? route.resolvePath(to) : resolvePath('', to);
 
       if (resolvedTo === undefined) {
         throw new Error(`Path '${to}' is not a routable path`);
       } else if (referrers.length >= MAX_REDIRECTS) {
-        throw new Error("Too many redirects");
+        throw new Error('Too many redirects');
       }
 
       const current = reference$();
 
       if (resolvedTo !== current || nextState !== state$()) {
-        const len = referrers.push({ value: current, replace, scroll, state: state$() });
-        start(() => {
-          reference$(resolvedTo);
-          state$(nextState);
-          // resetErrorBoundaries();
-        }).then(() => {
-          if (referrers.length === len) {
-            navigateEnd({
-              value: resolvedTo,
-              state: nextState,
-            });
-          }
+        const len = referrers.push({
+          value: current,
+          replace,
+          scroll,
+          state: state$(),
         });
+        // start(() => {
+        reference$(resolvedTo);
+        state$(nextState);
+        // resetErrorBoundaries();
+        // }).then(() => {
+        if (referrers.length === len) {
+          navigateEnd({
+            value: resolvedTo,
+            state: nextState,
+          });
+        }
+        // });
       }
     });
   }
@@ -372,10 +440,10 @@ export function createRouterContext(
     const { value, state } = source();
     useSample(() => {
       if (value !== reference$()) {
-        start(() => {
-          reference$(value);
-          state$(state);
-        });
+        // start(() => {
+        reference$(value);
+        state$(state);
+        // });
       }
     });
   });
@@ -393,7 +461,7 @@ export function createRouterContext(
 
     const a = evt
       .composedPath()
-      .find((el) => el instanceof Node && el.nodeName.toUpperCase() === "A") as
+      .find((el) => el instanceof Node && el.nodeName.toUpperCase() === 'A') as
       | HTMLAnchorElement
       | SVGAElement
       | undefined;
@@ -403,39 +471,43 @@ export function createRouterContext(
     const isSvg = a instanceof SVGAElement;
     const href = isSvg ? a.href.baseVal : a.href;
     const target = isSvg ? a.target.baseVal : a.target;
-    if (target || (!href && !a.hasAttribute("state"))) return;
+    if (target || (!href && !a.hasAttribute('state'))) return;
 
-    const rel = (a.getAttribute("rel") || "").split(/\s+/);
-    if (a.hasAttribute("download") || (rel && rel.includes("external"))) return;
+    const rel = (a.getAttribute('rel') || '').split(/\s+/);
+    if (a.hasAttribute('download') || (rel && rel.includes('external'))) return;
 
     const url = isSvg ? new URL(href, document.baseURI) : new URL(href);
     const pathname = urlDecode(url.pathname);
     if (
       url.origin !== window.location.origin ||
-      (basePath && pathname && !pathname.toLowerCase().startsWith(basePath.toLowerCase()))
+      (basePath &&
+        pathname &&
+        !pathname.toLowerCase().startsWith(basePath.toLowerCase()))
     )
       return;
 
-    const to = parsePath(pathname + urlDecode(url.search, true) + urlDecode(url.hash));
-    const state = a.getAttribute("state");
+    const to = parsePath(
+      pathname + urlDecode(url.search, true) + urlDecode(url.hash)
+    );
+    const state = a.getAttribute('state');
 
     evt.preventDefault();
     navigateFromRoute(baseRoute, to, {
       resolve: false,
-      replace: a.hasAttribute("replace"),
-      scroll: !a.hasAttribute("noscroll"),
+      replace: a.hasAttribute('replace'),
+      scroll: !a.hasAttribute('noscroll'),
       state: state && JSON.parse(state),
     });
   }
 
-  document.addEventListener("click", handleAnchorClick);
-  useCleanup(() => document.removeEventListener("click", handleAnchorClick));
+  document.addEventListener('click', handleAnchorClick);
+  useCleanup(() => document.removeEventListener('click', handleAnchorClick));
 
   return {
     base: baseRoute,
     out: output,
     location,
-    isRouting,
+    // isRouting,
     renderPath,
     parsePath,
     navigatorFactory,
@@ -453,7 +525,7 @@ export function createRouteContext(
   const path = useComputed(() => match().path);
   const params = createMemoObject(() => match().params);
 
-  preload && preload();
+  preload?.();
 
   const route: RouteContext = {
     parent,
@@ -473,7 +545,12 @@ export function createRouteContext(
   if (data) {
     try {
       TempRoute = route;
-      route.data = data({ data: parent.data, params, location, navigate: navigatorFactory(route) });
+      route.data = data({
+        data: parent.data,
+        params,
+        location,
+        navigate: navigatorFactory(route),
+      });
     } finally {
       TempRoute = undefined;
     }

@@ -1,17 +1,14 @@
 {
   "compilerOptions": {
     "declaration": true,
+    "declarationDir": "dist",
     "target": "esnext",
-    "newLine": "LF",
     "moduleResolution": "node",
     "strict": true,
     "jsx": "preserve",
     "jsxImportSource": "voby",
-    "outDir": "./dist",
-    "module": "esnext"
+    "module": "esnext",
+    "baseUrl": "src"
   },
-  "include": [
-    "./src"
-  ],
-  "exclude": ["node_modules/"]
+  "include": ["./src"]
 }

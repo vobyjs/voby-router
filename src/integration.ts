@@ -1,6 +1,11 @@
-import { $, Observable, useCleanup } from "voby";
-import { useSignal } from "./utils";
-import type { LocationChange, LocationChangeSignal, RouterIntegration, RouterUtils } from "./types";
+import { $, Observable, useCleanup } from 'voby';
+import { useSignal } from 'utils';
+import type {
+  LocationChange,
+  LocationChangeSignal,
+  RouterIntegration,
+  RouterUtils,
+} from 'types';
 
 function bindEvent(target: EventTarget, type: string, handler: EventListener) {
   target.addEventListener(type, handler);
@@ -28,7 +33,7 @@ function querySelector<T extends Element>(selector: string) {
 }
 
 function scrollToHash(hash: string, fallbackTop?: boolean) {
-  const el = querySelector(`a#${hash}`);
+  const el = querySelector(`#${hash}`);
   if (el) {
     el.scrollIntoView();
   } else if (fallbackTop) {
@@ -43,7 +48,8 @@ export function createIntegration(
   utils?: Partial<RouterUtils>
 ): RouterIntegration {
   let ignore = false;
-  const wrap = (value: string | LocationChange) => (typeof value === "string" ? { value } : value);
+  const wrap = (value: string | LocationChange) =>
+    typeof value === 'string' ? { value } : value;
   const signal = intercept<LocationChange>(
     $(wrap(get()), { equals: (a, b) => a.value === b.value }),
     undefined,
@@ -73,7 +79,7 @@ export function normalizeIntegration(
 ): RouterIntegration {
   if (!integration) {
     return {
-      signal: useSignal($({ value: "" })),
+      signal: useSignal($({ value: '' })),
     };
   } else if (Array.isArray(integration)) {
     return {
@@ -92,18 +98,21 @@ export function staticIntegration(obj: LocationChange): RouterIntegration {
 export function pathIntegration() {
   return createIntegration(
     () => ({
-      value: window.location.pathname + window.location.search + window.location.hash,
+      value:
+        window.location.pathname +
+        window.location.search +
+        window.location.hash,
       state: history.state,
     }),
     ({ value, replace, scroll, state }) => {
       if (replace) {
-        window.history.replaceState(state, "", value);
+        window.history.replaceState(state, '', value);
       } else {
-        window.history.pushState(state, "", value);
+        window.history.pushState(state, '', value);
       }
       scrollToHash(window.location.hash.slice(1), scroll);
     },
-    (notify) => bindEvent(window, "popstate", () => notify()),
+    (notify) => bindEvent(window, 'popstate', () => notify()),
     {
       go: (delta) => window.history.go(delta),
     }
@@ -115,25 +124,25 @@ export function hashIntegration() {
     () => window.location.hash.slice(1),
     ({ value, replace, scroll, state }) => {
       if (replace) {
-        window.history.replaceState(state, "", "#" + value);
+        window.history.replaceState(state, '', '#' + value);
       } else {
         window.location.hash = value;
       }
-      const hashIndex = value.indexOf("#");
-      const hash = hashIndex >= 0 ? value.slice(hashIndex + 1) : "";
+      const hashIndex = value.indexOf('#');
+      const hash = hashIndex >= 0 ? value.slice(hashIndex + 1) : '';
       scrollToHash(hash, scroll);
     },
-    (notify) => bindEvent(window, "hashchange", () => notify()),
+    (notify) => bindEvent(window, 'hashchange', () => notify()),
     {
       go: (delta) => window.history.go(delta),
       renderPath: (path) => `#${path}`,
       parsePath: (str) => {
-        const to = str.replace(/^.*?#/, "");
+        const to = str.replace(/^.*?#/, '');
         // Hash-only hrefs like `#foo` from plain anchors will come in as `/#foo` whereas a link to
         // `/foo` will be `/#/foo`. Check if the to starts with a `/` and if not append it as a hash
         // to the current path so we can handle these in-page anchors correctly.
-        if (!to.startsWith("/")) {
-          const [, path = "/"] = window.location.hash.split("#", 2);
+        if (!to.startsWith('/')) {
+          const [, path = '/'] = window.location.hash.split('#', 2);
           return `${path}#${to}`;
         }
         return to;

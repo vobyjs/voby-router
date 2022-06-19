@@ -1,5 +1,5 @@
-import { If, useComputed, useMicrotask, useSample } from "voby";
-import { pathIntegration } from "./integration";
+import { If, useComputed, useRoot, useSample } from 'voby';
+import { pathIntegration } from 'integration';
 import {
   createBranches,
   createRouteContext,
@@ -13,7 +13,7 @@ import {
   useResolvedPath,
   useRoute,
   useRouter,
-} from "./routing";
+} from 'routing';
 import type {
   Location,
   LocationChangeSignal,
@@ -23,8 +23,9 @@ import type {
   RouteDefinition,
   RouteMatch,
   RouterIntegration,
-} from "./types";
-import { joinPaths, on } from "./utils";
+} from 'types';
+import { joinPaths, on } from 'utils';
+import { FunctionMaybe } from 'voby';
 
 declare global {
   namespace JSX {
@@ -58,7 +59,9 @@ export const Router = (props: RouterProps) => {
   const routerState = createRouterContext(integration, base, data, out);
 
   return (
-    <RouterContextObj.Provider value={routerState}>{props.children}</RouterContextObj.Provider>
+    <RouterContextObj.Provider value={routerState}>
+      {props.children}
+    </RouterContextObj.Provider>
   );
 };
 
@@ -72,12 +75,16 @@ export const Routes = (props: RoutesProps) => {
   const parentRoute = useRoute();
   const branches = useComputed(() =>
     createBranches(
-      props.children as unknown as RouteDefinition | RouteDefinition[],
-      joinPaths(parentRoute.pattern, props.base || ""),
+      props.children as unknown as FunctionMaybe<
+        RouteDefinition | RouteDefinition[]
+      >,
+      joinPaths(parentRoute.pattern, props.base || ''),
       Outlet
     )
   );
-  const matches = useComputed(() => getRouteMatches(branches(), router.location.pathname));
+  const matches = useComputed(() =>
+    getRouteMatches(branches(), router.location.pathname)
+  );
 
   if (router.out) {
     router.out.matches.push(
@@ -93,62 +100,65 @@ export const Routes = (props: RoutesProps) => {
   const disposers: (() => void)[] = [];
   let root: RouteContext | undefined;
   let prevMatches: RouteMatch[] | undefined;
-  let prevValue: RouteContext[] | undefined;
+  let prev: RouteContext[] | undefined;
+
   const routeStates = useComputed(
     on(matches, () => {
       const nextMatches = useSample(matches);
-      let equal = prevMatches && nextMatches.length === prevMatches.length;
+      let equal = nextMatches.length === prevMatches?.length;
       const next: RouteContext[] = [];
-      for (let i = 0, len = matches.length; i < len; i++) {
-        const prevMatch = nextMatches[i];
+      for (let i = 0, len = nextMatches.length; i < len; i++) {
+        const prevMatch = prevMatches?.[i];
         const nextMatch = nextMatches[i];
 
-        if (prevValue && prevMatch && nextMatch.route.pattern === prevMatch.route.pattern) {
-          next[i] = prevValue[i];
+        if (
+          prev &&
+          prevMatch &&
+          nextMatch.route.key === prevMatch.route.key
+        ) {
+          next[i] = prev[i];
         } else {
           equal = false;
-          if (disposers[i]) {
-            disposers[i]();
-          }
+          disposers[i]?.();
 
-          // createRoot(dispose => {
-          //   disposers[i] = dispose;
-          useMicrotask(
-            () =>
-              (next[i] = createRouteContext(
-                router,
-                next[i - 1] || parentRoute,
-                () => routeStates()[i + 1],
-                () => matches()[i]
-              ))
+          useRoot((dispose) => {
+            disposers[i] = dispose;
+          next[i] = createRouteContext(
+            router,
+            next[i - 1] || parentRoute,
+            () => routeStates()[i + 1],
+            () => matches()[i]
           );
-          // });
+          });
         }
       }
 
       disposers.splice(nextMatches.length).forEach((dispose) => dispose());
 
-      if (prevValue && equal) {
-        return prevValue;
+      if (prev && equal) {
+        return prev;
       }
       root = next[0];
       prevMatches = [...nextMatches];
-      prevValue = [...next];
+      prev = [...next];
       return next;
     })
   );
 
   return (
-    <If when={routeStates() && root}>
+    <If when={() => routeStates() && root}>
       {(route) => (
-        <RouteContextObj.Provider value={route()}>{route().outlet()}</RouteContextObj.Provider>
+        <RouteContextObj.Provider value={route()}>
+          {route().outlet()}
+        </RouteContextObj.Provider>
       )}
     </If>
   );
 };
 
-export const useRoutes = (routes: RouteDefinition | RouteDefinition[], base?: string) => () =>
-  <Routes base={base}>{routes as any}</Routes>;
+export const useRoutes =
+  (routes: RouteDefinition | RouteDefinition[], base?: string) => () =>
+    <Routes base={base}>{routes as unknown as JSX.Child}</Routes>;
 
 export type RouteProps = {
   path: string;
@@ -166,33 +176,41 @@ export type RouteProps = {
     }
 );
 
-export const Route = (props: RouteProps) => props as unknown as JSX.Element;
+export const Route = (props: RouteProps) => props;
 
 export const Outlet = () => {
   const route = useRoute();
   return (
-    <If when={route.child}>
+    <If when={() => route.child}>
       {(child) => (
-        <RouteContextObj.Provider value={child()}>{child().outlet()}</RouteContextObj.Provider>
+        <RouteContextObj.Provider value={child()}>
+          {child().outlet()}
+        </RouteContextObj.Provider>
       )}
     </If>
   );
 };
 
-interface LinkBaseProps extends Omit<JSX.AnchorHTMLAttributes<HTMLAnchorElement>, "state"> {
+interface LinkBaseProps
+  extends Omit<JSX.AnchorHTMLAttributes<HTMLAnchorElement>, 'state'> {
   to: string | undefined;
   state?: unknown;
 }
 
 function LinkBase({ children, to, href, state, ...rest }: LinkBaseProps) {
   return (
-    <a {...rest} href={useHref(() => to)() || href} state={JSON.stringify(state)}>
+    <a
+      {...rest}
+      href={useHref(() => to)() || href}
+      state={JSON.stringify(state)}
+    >
       {children}
     </a>
   );
 }
 
-export interface LinkProps extends Omit<JSX.AnchorHTMLAttributes<HTMLAnchorElement>, "state"> {
+export interface LinkProps
+  extends Omit<JSX.AnchorHTMLAttributes<HTMLAnchorElement>, 'state'> {
   href: string;
   replace?: boolean;
   noScroll?: boolean;
@@ -211,8 +229,8 @@ export interface NavLinkProps extends LinkProps {
 }
 
 export function NavLink({
-  activeClass = "active",
-  inactiveClass = "inactive",
+  activeClass = 'active',
+  inactiveClass = 'inactive',
   end,
   href,
   ...rest
@@ -234,13 +252,15 @@ export function NavLink({
       {...rest}
       to={to()}
       class={{ [inactiveClass]: !isActive(), [activeClass]: isActive() }}
-      aria-current={isActive() ? "page" : undefined}
+      aria-current={isActive() ? 'page' : undefined}
     />
   );
 }
 
 export interface NavigateProps {
-  href: ((args: { navigate: Navigator; location: Location }) => string) | string;
+  href:
+    | ((args: { navigate: Navigator; location: Location }) => string)
+    | string;
   state?: unknown;
 }
 
@@ -248,7 +268,7 @@ export function Navigate(props: NavigateProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { href, state } = props;
-  const path = typeof href === "function" ? href({ navigate, location }) : href;
+  const path = typeof href === 'function' ? href({ navigate, location }) : href;
   navigate(path, { replace: true, state });
   return null;
 }

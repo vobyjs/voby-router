@@ -1,6 +1,9 @@
 export type Params = Record<string, string>;
 
-export type SetParams = Record<string, string | number | boolean | null | undefined>;
+export type SetParams = Record<
+  string,
+  string | number | boolean | null | undefined
+>;
 
 export interface Path {
   pathname: string;
@@ -35,7 +38,10 @@ export interface LocationChange<S = unknown> {
   state?: S;
 }
 
-export type LocationChangeSignal = [() => LocationChange, (next: LocationChange) => void];
+export type LocationChangeSignal = [
+  () => LocationChange,
+  (next: LocationChange) => void
+];
 
 export interface RouterIntegration {
   signal: LocationChangeSignal;
@@ -52,7 +58,7 @@ export interface RouteDataFuncArgs {
 export type RouteDataFunc<T = unknown> = (args: RouteDataFuncArgs) => T;
 
 export type RouteDefinition = {
-  path: string;
+  path: string | string[];
   data?: RouteDataFunc;
   children?: RouteDefinition | RouteDefinition[];
 } & (
@@ -84,6 +90,7 @@ export interface OutputMatch {
 }
 
 export interface Route {
+  key: unknown;
   originalPath: string;
   pattern: string;
   element: () => JSX.Element;
@@ -132,7 +139,7 @@ export interface RouterContext {
   out?: RouterOutput;
   location: Location;
   navigatorFactory: NavigatorFactory;
-  isRouting: () => boolean;
+  // isRouting: () => boolean;
   renderPath(path: string): string;
   parsePath(str: string): string;
 }
