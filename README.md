@@ -445,7 +445,7 @@ Retrieves reactive `location` object useful for getting things like `pathname`
 ```js
 const location = useLocation();
 
-const pathname = createMemo(() => parsePath(location.pathname));
+const pathname = useComputed(() => parsePath(location.pathname));
 ```
 
 ### useSearchParams
