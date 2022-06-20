@@ -97,7 +97,7 @@ export const Routes = (props: RoutesProps) => {
     );
   }
 
-  const disposers: (() => void)[] = [];
+  // const disposers: (() => void)[] = [];
   let root: RouteContext | undefined;
   let prevMatches: RouteMatch[] | undefined;
   let prev: RouteContext[] | undefined;
@@ -111,29 +111,25 @@ export const Routes = (props: RoutesProps) => {
         const prevMatch = prevMatches?.[i];
         const nextMatch = nextMatches[i];
 
-        if (
-          prev &&
-          prevMatch &&
-          nextMatch.route.key === prevMatch.route.key
-        ) {
+        if (prev && prevMatch && nextMatch.route.key === prevMatch.route.key) {
           next[i] = prev[i];
         } else {
           equal = false;
-          disposers[i]?.();
+          // disposers[i]?.();
 
-          useRoot((dispose) => {
-            disposers[i] = dispose;
+          // useRoot((dispose) => {
+          //   disposers[i] = dispose;
           next[i] = createRouteContext(
             router,
             next[i - 1] || parentRoute,
             () => routeStates()[i + 1],
             () => matches()[i]
           );
-          });
+          // });
         }
       }
 
-      disposers.splice(nextMatches.length).forEach((dispose) => dispose());
+      // disposers.splice(nextMatches.length).forEach((dispose) => dispose());
 
       if (prev && equal) {
         return prev;
@@ -176,7 +172,7 @@ export type RouteProps = {
     }
 );
 
-export const Route = (props: RouteProps) => props;
+export const Route = (props: RouteProps) => props as unknown as JSX.Element;
 
 export const Outlet = () => {
   const route = useRoute();

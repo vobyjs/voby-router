@@ -178,7 +178,7 @@ export function expandOptionals(pattern: string): string[] {
   }
 
   return expandOptionals(suffix).reduce<string[]>(
-    (results, expansion) => [...results, ...prefixes.map(p => p + expansion)],
+    (results, expansion) => [...results, ...prefixes.map((p) => p + expansion)],
     []
   );
 }

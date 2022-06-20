@@ -144,18 +144,18 @@ export function createRoutes(
     preload: routeDef.component
       ? (component as MaybePreloadableComponent).preload
       : routeDef.preload,
-    data
+    data,
   };
 
   return asArray(routeDef.path).reduce<Route[]>((acc, path) => {
     for (const originalPath of expandOptionals(path)) {
       const path = joinPaths(base, originalPath);
-      const pattern = isLeaf ? path : path.split("/*", 1)[0];
+      const pattern = isLeaf ? path : path.split('/*', 1)[0];
       acc.push({
         ...shared,
         originalPath,
         pattern,
-        matcher: createMatcher(pattern, !isLeaf)
+        matcher: createMatcher(pattern, !isLeaf),
       });
     }
     return acc;
@@ -214,13 +214,19 @@ export function createBranches(
 
   for (let i = 0, len = routeDefs.length; i < len; i++) {
     const def = routeDefs[i];
-    if (def && typeof def === "object" && def.hasOwnProperty("path")) {
+    if (def && typeof def === 'object' && def.hasOwnProperty('path')) {
       const routes = createRoutes(def, base, fallback);
       for (const route of routes) {
         stack.push(route);
 
         if (def.children) {
-          createBranches(def.children, route.pattern, fallback, stack, branches);
+          createBranches(
+            def.children,
+            route.pattern,
+            fallback,
+            stack,
+            branches
+          );
         } else {
           const branch = createBranch([...stack], branches.length);
           branches.push(branch);
