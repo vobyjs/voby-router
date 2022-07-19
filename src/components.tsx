@@ -157,7 +157,7 @@ export const useRoutes =
     <Routes base={base}>{routes as unknown as JSX.Child}</Routes>;
 
 export type RouteProps = {
-  path: string;
+  path: string | string[];
   children?: JSX.Element;
   data?: RouteDataFunc;
 } & (

@@ -66,12 +66,14 @@ This sets up a context so that we can display the routes anywhere in the app.
 import { Routes, Route } from "voby-router"
 
 export default function App() {
-  return (<>
-    <h1>My Site with Lots of Pages<h1/>
-    <Routes>
+  return (
+    <>
+      <h1>My Site with Lots of Pages</h1>
+      <Routes>
 
-    </Routes>
-  <>)
+      </Routes>
+    <>
+  )
 }
 ```
 
@@ -84,14 +86,16 @@ import Home from "./pages/Home"
 import Users from "./pages/Users"
 
 export default function App() {
-  return (<>
-    <h1>My Site with Lots of Pages<h1/>
-    <Routes>
-      <Route path="/users" element={<Users/>} />
-      <Route path="/" element={<Home/>} />
-      <Route path="/about" element={<div>This site was made with Voby</div>} />
-    </Routes>
-  <>)
+  return (
+    <>
+      <h1>My Site with Lots of Pages</h1>
+      <Routes>
+        <Route path="/users" element={<Users/>} />
+        <Route path="/" element={<Home/>} />
+        <Route path="/about" element={<div>This site was made with Voby</div>} />
+      </Routes>
+    <>
+  )
 }
 ```
 
@@ -106,14 +110,16 @@ const Users = lazy(() => import("./pages/Home"));
 const Home = lazy(() => import("./pages/Users"));
 
 export default function App() {
-  return (<>
-    <h1>My Site with Lots of Pages<h1/>
-    <Routes>
-      <Route path="/users" element={<Users/>} />
-      <Route path="/" element={<Home/>} />
-      <Route path="/about" element={<div>This site was made with Voby</div>} />
-    </Routes>
-  <>)
+  return (
+    <>
+      <h1>My Site with Lots of Pages</h1>
+      <Routes>
+        <Route path="/users" element={<Users/>} />
+        <Route path="/" element={<Home/>} />
+        <Route path="/about" element={<div>This site was made with Voby</div>} />
+      </Routes>
+    <>
+  )
 }
 ```
 
@@ -128,31 +134,43 @@ const Users = lazy(() => import("./pages/Home"));
 const Home = lazy(() => import("./pages/Users"));
 
 export default function App() {
-  return (<>
-    <h1>My Site with Lots of Pages<h1/>
-    <nav>
-      <Link href="/about">About</Link>
-      <Link href="/">Home</Link>
-    </nav>
-    <Routes>
-      <Route path="/users" element={<Users/>} />
-      <Route path="/" element={<Home/>} />
-      <Route path="/about" element={<div>This site was made with Voby</div>} />
-    </Routes>
-  <>)
+  return (
+    <>
+      <h1>My Site with Lots of Pages</h1>
+      <nav>
+        <Link href="/about">About</Link>
+        <Link href="/">Home</Link>
+      </nav>
+      <Routes>
+        <Route path="/users" element={<Users/>} />
+        <Route path="/" element={<Home/>} />
+        <Route path="/about" element={<div>This site was made with Voby</div>} />
+      </Routes>
+    <>
+  )
 }
 ```
 
 If you use `NavLink` instead of `Link`, the anchor tag will have an `active` class if its route is currently shown, and `inactive` otherwise. 
 
-Both of these components have the same props:
+Both of these components have these props:
 
 | prop     | type    | description                                                                                                                                                                              |
 |----------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | href     | string  | The path of the route to navigate to. This will be resolved relative to the route that the link is in, but you can preface it with `/` to refer back to the root.                                                                                                                                                    |
 | noScroll | boolean | If true, turn off the default behavior of scrolling to the top of the new page                                                                                                           |
 | replace  | boolean | If true, don't add a new entry to the browser history. (By default, the new page will be added to the browser history, so pressing the back button will take you to the previous route.) |
-| state    | unknown | [Push this value](https://developer.mozilla.org/en-US/docs/Web/API/History/pushState) to the history stack when navigating                                                                                                                                                     |
+| state    | unknown | [Push this value](https://developer.mozilla.org/en-US/docs/Web/API/History/pushState) to the history stack when navigating  |
+
+
+`NavLink` additionally has:
+
+| prop     | type    | description                                                                                                                                                                              |
+|----------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| inactiveClass | string  | The class to show when the link is inactive (when the current location doesn't match the link) |
+| activeClass | string | The class to show when the link is active                                                                                                        |
+| end  | boolean | If `true`, only considers the link to be active when the curent location matches the `href` exactly; if `false`, check if the current location _starts with_ `href` |
+
 
 If you have a same-domain path that you want to link to _without_ going through the router, set `rel="external"` on the link component.
 ### The Navigate Component
@@ -183,15 +201,17 @@ const Home = lazy(() => import("./pages/Users"));
 const Home = lazy(() => import("./pages/User"));
 
 export default function App() {
-  return (<>
-    <h1>My Site with Lots of Pages<h1/>
-    <Routes>
-      <Route path="/users" element={<Users/>} />
-      <Route path="/users/:id" element={<User/>} />
-      <Route path="/" element={<Home/>} />
-      <Route path="/about" element={<div>This site was made with Voby</div>} />
-    </Routes>
-  <>)
+  return (
+    <>
+      <h1>My Site with Lots of Pages</h1>
+      <Routes>
+        <Route path="/users" element={<Users/>} />
+        <Route path="/users/:id" element={<User/>} />
+        <Route path="/" element={<Home/>} />
+        <Route path="/about" element={<div>This site was made with Voby</div>} />
+      </Routes>
+    <>
+  )
 }
 ```
 
@@ -270,7 +290,7 @@ As its only argument, the data function is passed an object that you can use to 
 |-----------|------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
 | params    | object                                         | The route parameters (same value as calling `useParams()` inside the route component)                       |
 | location  | `{ pathname, search, hash, query, state, key}` | An object that you can use to get more information about the path (corresponds to [`useLocation()`](#uselocation))          |
-| navigate | `(to: string, options?: NavigatorOptions) => void`                        | A function that you can call to navigate to a different route instead (corresponds to [`useNavigate()`](#usenavigate))     |
+| navigate | `(to: string, options?: NavigateOptions) => void`                        | A function that you can call to navigate to a different route instead (corresponds to [`useNavigate()`](#usenavigate))     |
 | data      | unknown                                        | The data returned by the [parent's](#nested-routes) data function, if any. (Data will pass through any intermediate nesting.) |
 
 A common pattern is to export the data function that corresponds to a route in a dedicated `route.data.js` file. This way, the data function can be imported without loading anything else.
