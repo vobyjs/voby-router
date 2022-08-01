@@ -3,9 +3,9 @@ import {
   createContext,
   useContext,
   Observable,
-  useComputed,
+  useMemo,
   ObservableReadonly,
-  useSample,
+  untrack,
   createElement,
   useEffect,
   useCleanup,
@@ -69,14 +69,14 @@ export const useResolvedPath = (
   path: () => string
 ): ObservableReadonly<string | undefined> => {
   const route = useRoute();
-  return useComputed(() => route.resolvePath(path()));
+  return useMemo(() => route.resolvePath(path()));
 };
 
 export const useHref = (
   to: () => string | undefined
 ): ObservableReadonly<string | undefined> => {
   const router = useRouter();
-  return useComputed(() => {
+  return useMemo(() => {
     const to_ = to();
     return to_ !== undefined ? router.renderPath(to_) : to_;
   });
@@ -91,8 +91,8 @@ export const useMatch = (
   path: () => string
 ): ObservableReadonly<PathMatch | null> => {
   const location = useLocation();
-  const matcher = useComputed(() => createMatcher(path()));
-  return useComputed(() => matcher()(location.pathname));
+  const matcher = useMemo(() => createMatcher(path()));
+  return useMemo(() => matcher()(location.pathname));
 };
 
 export const useParams = <T extends Params>() => useRoute().params as T;
@@ -109,7 +109,7 @@ export const useSearchParams = <T extends Params>(): [
     params: SetParams,
     options?: Partial<NavigateOptions>
   ) => {
-    const searchString = useSample(() =>
+    const searchString = untrack(() =>
       mergeSearchString(location.search, params)
     );
     navigate(searchString, { scroll: false, ...options, resolve: true });
@@ -258,7 +258,7 @@ export function createLocation(
   path: Observable<string>,
   state: Observable<any>
 ): Location {
-  const url = useComputed<URL>(
+  const url = useMemo<URL>(
     () => {
       const path_ = path();
       try {
@@ -275,10 +275,10 @@ export function createLocation(
     }
   );
 
-  const pathname = useComputed(() => urlDecode(url().pathname));
-  const search = useComputed(() => urlDecode(url().search, true));
-  const hash = useComputed(() => urlDecode(url().hash));
-  const key = useComputed(() => '');
+  const pathname = useMemo(() => urlDecode(url().pathname));
+  const search = useMemo(() => urlDecode(url().search, true));
+  const hash = useMemo(() => urlDecode(url().hash));
+  const key = useMemo(() => '');
 
   return {
     get pathname() {
@@ -364,7 +364,7 @@ export function createRouterContext(
     options?: Partial<NavigateOptions>
   ) {
     // Untrack in case someone navigates in an effect - don't want to track `reference` or route paths
-    useSample(() => {
+    untrack(() => {
       if (typeof to === 'number') {
         if (!to) {
           // A delta of 0 means stay at the current location, so it is ignored
@@ -444,7 +444,7 @@ export function createRouterContext(
 
   useEffect(() => {
     const { value, state } = source();
-    useSample(() => {
+    untrack(() => {
       if (value !== reference$()) {
         // start(() => {
         reference$(value);
@@ -528,7 +528,7 @@ export function createRouteContext(
 ): RouteContext {
   const { base, location, navigatorFactory } = router;
   const { pattern, element: outlet, preload, data } = match().route;
-  const path = useComputed(() => match().path);
+  const path = useMemo(() => match().path);
   const params = createMemoObject(() => match().params);
 
   preload?.();
