@@ -1,4 +1,4 @@
-import { Observable, ObservableReadonly, useComputed, useSample } from 'voby';
+import { Observable, ObservableReadonly, useMemo, untrack } from 'voby';
 import type { Params, PathMatch, Route, SetParams } from 'types';
 
 const hasSchemeRegex = /^(?:[a-z0-9]+:)?\/\//i;
@@ -114,7 +114,7 @@ export function createMemoObject<T extends Record<string | symbol, unknown>>(
       if (!map.has(property)) {
         map.set(
           property,
-          useComputed(() => fn()[property])
+          useMemo(() => fn()[property])
         );
       }
       return map.get(property)();
@@ -145,9 +145,9 @@ export function mergeSearchString(search: string, params: SetParams) {
 }
 
 export function on<T>(deps: () => void, fn: () => T): ObservableReadonly<T> {
-  return useComputed(() => {
+  return useMemo(() => {
     deps();
-    return useSample(fn);
+    return untrack(fn);
   });
 }
 

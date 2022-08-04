@@ -1,4 +1,4 @@
-import { If, useComputed, useRoot, useSample } from 'voby';
+import { If, useMemo, useRoot, untrack } from 'voby';
 import { pathIntegration } from 'integration';
 import {
   createBranches,
@@ -73,7 +73,7 @@ export interface RoutesProps {
 export const Routes = (props: RoutesProps) => {
   const router = useRouter();
   const parentRoute = useRoute();
-  const branches = useComputed(() =>
+  const branches = useMemo(() =>
     createBranches(
       props.children as unknown as FunctionMaybe<
         RouteDefinition | RouteDefinition[]
@@ -82,7 +82,7 @@ export const Routes = (props: RoutesProps) => {
       Outlet
     )
   );
-  const matches = useComputed(() =>
+  const matches = useMemo(() =>
     getRouteMatches(branches(), router.location.pathname)
   );
 
@@ -102,9 +102,9 @@ export const Routes = (props: RoutesProps) => {
   let prevMatches: RouteMatch[] | undefined;
   let prev: RouteContext[] | undefined;
 
-  const routeStates = useComputed(
+  const routeStates = useMemo(
     on(matches, () => {
-      const nextMatches = useSample(matches);
+      const nextMatches = untrack(matches);
       let equal = nextMatches.length === prevMatches?.length;
       const next: RouteContext[] = [];
       for (let i = 0, len = nextMatches.length; i < len; i++) {
@@ -233,7 +233,7 @@ export function NavLink({
 }: NavLinkProps) {
   const location = useLocation();
   const to = useResolvedPath(() => href);
-  const isActive = useComputed(() => {
+  const isActive = useMemo(() => {
     const to_ = to();
     if (to_ === undefined) {
       return false;

@@ -4,14 +4,14 @@ specifiers:
   prettier: ^2.7.1
   tsup: ^6.1.3
   typescript: ^4.7.4
-  voby: ^0.34.10
+  voby: ^0.35.0
   voby-esbuild: ^1.0.2
 
 devDependencies:
   prettier: 2.7.1
   tsup: 6.1.3_typescript@4.7.4
   typescript: 4.7.4
-  voby: 0.34.10
+  voby: 0.35.0
   voby-esbuild: 1.0.2
 
 packages:
@@ -576,8 +576,8 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
-  /oby/10.1.0:
-    resolution: {integrity: sha512-pbzNfGaVVG3Ao0h10Sax9VdJT91hjJd3cQrTCnAYk8uxzvEW+bb+CF2+VmSrAxrclcHEmScLgVqfa7+4jid61w==}
+  /oby/11.1.0:
+    resolution: {integrity: sha512-WBtwQN/pcdshPe+j921YduvyXEOVrRtid4K7FwJgQmHcLVm3BIR8LQg8mR+apS1Sx8K8CK9nX7f8FoqaCDeMJg==}
     dev: true
 
   /once/1.4.0:
@@ -807,11 +807,11 @@ packages:
     resolution: {integrity: sha512-P/8S2RR1NFHpGtRpu+JK5UHjlW99mljcjh42a+BO2BEsdPqBQsvzV/+R2LXcv6nyTiLfJcqws6nAIHYgdk2Dwg==}
     dev: true
 
-  /voby/0.34.10:
-    resolution: {integrity: sha512-/nLi0Z9wLxR7dN67jHxz6QaBQfxFISWL5pOVL1avJ539KuchAGmQhKNZbj8gzvtNilrkJ794NW9ZZ324Y/NXmw==}
+  /voby/0.35.0:
+    resolution: {integrity: sha512-hts6WXTB0B2x6XK6ddK8p4vcUgh4xT6dFT1Su7QlXvIUnYdgiY/XwufonM1Sp2os6s0RwfaBjfqn8mqNt7YkYA==}
     dependencies:
       htm: 3.1.1
-      oby: 10.1.0
+      oby: 11.1.0
     dev: true
 
   /webidl-conversions/4.0.2:
