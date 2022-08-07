@@ -5,7 +5,7 @@
     "target": "esnext",
     "moduleResolution": "node",
     "strict": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "jsxImportSource": "voby",
     "module": "esnext",
     "baseUrl": "src"
