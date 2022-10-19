@@ -145,7 +145,7 @@ export const Routes = (props: RoutesProps) => {
     <If when={() => routeStates() && root}>
       {(route) => (
         <RouteContextObj.Provider value={route()}>
-          {route().outlet()}
+          {() => route().outlet()}
         </RouteContextObj.Provider>
       )}
     </If>
@@ -180,7 +180,7 @@ export const Outlet = () => {
     <If when={() => route.child}>
       {(child) => (
         <RouteContextObj.Provider value={child()}>
-          {child().outlet()}
+          {() => child().outlet()}
         </RouteContextObj.Provider>
       )}
     </If>
