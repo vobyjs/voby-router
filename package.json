@@ -3,7 +3,7 @@
   "description": "Universal router for voby",
   "author": "high1",
   "license": "MIT",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "homepage": "https://github.com/vobyjs/voby-router#readme",
   "repository": {
     "type": "git",
