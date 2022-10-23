@@ -1,4 +1,4 @@
-import { If, useMemo, useRoot, untrack } from 'voby';
+import { FunctionMaybe, If, useMemo } from 'voby';
 import { pathIntegration } from 'integration';
 import {
   createBranches,
@@ -25,17 +25,6 @@ import type {
   RouterIntegration,
 } from 'types';
 import { joinPaths, on } from 'utils';
-import { FunctionMaybe } from 'voby';
-
-declare global {
-  namespace JSX {
-    interface AnchorHTMLAttributes<T> {
-      state?: string;
-      noScroll?: boolean;
-      replace?: boolean;
-    }
-  }
-}
 
 export type RouterProps = {
   base?: string;
@@ -54,7 +43,7 @@ export type RouterProps = {
 );
 
 export const Router = (props: RouterProps) => {
-  const { source, url, base, data, out } = props;
+  const { source, base, data, out } = props;
   const integration = source || pathIntegration();
   const routerState = createRouterContext(integration, base, data, out);
 
@@ -97,45 +86,34 @@ export const Routes = (props: RoutesProps) => {
     );
   }
 
-  // const disposers: (() => void)[] = [];
   let root: RouteContext | undefined;
   let prevMatches: RouteMatch[] | undefined;
   let prev: RouteContext[] | undefined;
 
   const routeStates = useMemo(
     on(matches, () => {
-      const nextMatches = untrack(matches);
-      let equal = nextMatches.length === prevMatches?.length;
+      let equal = matches().length === prevMatches?.length;
       const next: RouteContext[] = [];
-      for (let i = 0, len = nextMatches.length; i < len; i++) {
+      for (let i = 0, len = matches().length; i < len; i++) {
         const prevMatch = prevMatches?.[i];
-        const nextMatch = nextMatches[i];
+        const nextMatch = matches()[i];
 
         if (prev && prevMatch && nextMatch.route.key === prevMatch.route.key) {
           next[i] = prev[i];
         } else {
           equal = false;
-          // disposers[i]?.();
-
-          // useRoot((dispose) => {
-          //   disposers[i] = dispose;
           next[i] = createRouteContext(
             router,
             next[i - 1] || parentRoute,
             () => routeStates()[i + 1],
             () => matches()[i]
           );
-          // });
         }
       }
 
-      // disposers.splice(nextMatches.length).forEach((dispose) => dispose());
-
-      if (prev && equal) {
-        return prev;
-      }
+      if (prev && equal) return prev;
       root = next[0];
-      prevMatches = [...nextMatches];
+      prevMatches = [...matches()];
       prev = [...next];
       return next;
     })
@@ -187,71 +165,85 @@ export const Outlet = () => {
   );
 };
 
-interface LinkBaseProps
-  extends Omit<JSX.AnchorHTMLAttributes<HTMLAnchorElement>, 'state'> {
-  to: string | undefined;
-  state?: unknown;
-}
+// interface LinkBaseProps
+//   extends Omit<JSX.AnchorHTMLAttributes<HTMLAnchorElement>, 'state'> {
+//   to: string | undefined;
+//   state?: unknown;
+// }
 
-function LinkBase({ children, to, href, state, ...rest }: LinkBaseProps) {
-  return (
-    <a
-      {...rest}
-      href={useHref(() => to)() || href}
-      state={JSON.stringify(state)}
-    >
-      {children}
-    </a>
-  );
-}
+// function LinkBase({ children, to, href, state, ...rest }: LinkBaseProps) {
+//   return (
+//     <a
+//       {...rest}
+//       href={useHref(() => to)() || href}
+//       state={JSON.stringify(state)}
+//     >
+//       {children}
+//     </a>
+//   );
+// }
 
-export interface LinkProps
+export interface AnchorProps
   extends Omit<JSX.AnchorHTMLAttributes<HTMLAnchorElement>, 'state'> {
   href: string;
   replace?: boolean;
   noScroll?: boolean;
   state?: unknown;
-}
-
-export function Link(props: LinkProps) {
-  const to = useResolvedPath(() => props.href);
-  return <LinkBase {...props} to={to()} />;
-}
-
-export interface NavLinkProps extends LinkProps {
+  // export function Link(props: LinkProps) {
+  //   const to = useResolvedPath(() => props.href);
+  //   return <LinkBase {...props} to={to()} />;
+  // }
+  // export interface NavLinkProps extends LinkProps {
   inactiveClass?: string;
   activeClass?: string;
   end?: boolean;
 }
 
-export function NavLink({
+export function A({
   activeClass = 'active',
   inactiveClass = 'inactive',
+  class: class_,
   end,
-  href,
+  href: href_,
+  state,
   ...rest
-}: NavLinkProps) {
+}: AnchorProps) {
+  const to = useResolvedPath(() => href_);
+  const href = useHref(to);
   const location = useLocation();
-  const to = useResolvedPath(() => href);
   const isActive = useMemo(() => {
     const to_ = to();
-    if (to_ === undefined) {
-      return false;
-    }
+    if (to_ === undefined) return false;
     const path = to_.split(/[?#]/, 1)[0].toLowerCase();
     const loc = location.pathname.toLowerCase();
     return end ? path === loc : loc.startsWith(path);
   });
 
   return (
-    <LinkBase
+    <a
+      link
       {...rest}
-      to={to()}
-      class={{ [inactiveClass]: !isActive(), [activeClass]: isActive() }}
+      href={href() ?? href_}
+      state={JSON.stringify(state)}
+      class={[
+        {
+          [inactiveClass]: !isActive(),
+          [activeClass]: isActive(),
+        },
+        class_,
+      ]}
       aria-current={isActive() ? 'page' : undefined}
     />
   );
 }
+
+// deprecated alias exports
+export {
+  A as Link,
+  A as NavLink,
+  AnchorProps as LinkProps,
+  AnchorProps as NavLinkProps,
+};
 
 export interface NavigateProps {
   href:

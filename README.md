@@ -101,7 +101,7 @@ export default function App() {
 
 3. Lazy-load route components
 
-This way, the `Users` and `Home` components will only be loaded if you're navigating to `/users` or `/home`, respectively.
+This way, the `Users` and `Home` components will only be loaded if you're navigating to `/users` or `/`, respectively.
 
 ```jsx
 import { lazy } from "voby";
@@ -125,11 +125,11 @@ export default function App() {
 
 ## Create Links to Your Routes
 
-Use the `Link` component to create an anchor tag that takes you to a route:
+Use the `A` component to create an anchor tag that takes you to a route:
 
 ```jsx
 import { lazy } from "voby";
-import { Routes, Route, Link } from "voby-router"
+import { Routes, Route, A } from "voby-router"
 const Users = lazy(() => import("./pages/Home"));
 const Home = lazy(() => import("./pages/Users"));
 
@@ -138,8 +138,8 @@ export default function App() {
     <>
       <h1>My Site with Lots of Pages</h1>
       <nav>
-        <Link href="/about">About</Link>
-        <Link href="/">Home</Link>
+        <A href="/about">About</A>
+        <A href="/">Home</A>
       </nav>
       <Routes>
         <Route path="/users" element={<Users/>} />
@@ -151,9 +151,7 @@ export default function App() {
 }
 ```
 
-If you use `NavLink` instead of `Link`, the anchor tag will have an `active` class if its route is currently shown, and `inactive` otherwise. 
-
-Both of these components have these props:
+The `<A>` tag also has an `active` class if its href matches the current location, and `inactive` otherwise. **Note:** By default matching includes locations that are descendents (eg. href `/users` matches locations `/users` and `/users/123`), use the boolean `end` prop to prevent matching these. This is particularly useful for links to the root route `/` which would match everything.
 
 | prop     | type    | description                                                                                                                                                                              |
 |----------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -161,20 +159,13 @@ Both of these components have these props:
 | noScroll | boolean | If true, turn off the default behavior of scrolling to the top of the new page                                                                                                           |
 | replace  | boolean | If true, don't add a new entry to the browser history. (By default, the new page will be added to the browser history, so pressing the back button will take you to the previous route.) |
 | state    | unknown | [Push this value](https://developer.mozilla.org/en-US/docs/Web/API/History/pushState) to the history stack when navigating  |
-
-
-`NavLink` additionally has:
-
-| prop     | type    | description                                                                                                                                                                              |
-|----------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | inactiveClass | string  | The class to show when the link is inactive (when the current location doesn't match the link) |
 | activeClass | string | The class to show when the link is active                                                                                                        |
 | end  | boolean | If `true`, only considers the link to be active when the curent location matches the `href` exactly; if `false`, check if the current location _starts with_ `href` |
 
 
-If you have a same-domain path that you want to link to _without_ going through the router, set `rel="external"` on the link component.
 ### The Navigate Component
-`voby-router` provides a `Navigate` component that works similarly to `Link` and `NavLink`, but it will _immediately_ navigate to the provided path as soon as the component is rendered. It also uses the `href` prop, but you have the additional option of passing a function to `href` that returns a path to navigate to:
+`voby-router` provides a `Navigate` component that works similarly to `A`, but it will _immediately_ navigate to the provided path as soon as the component is rendered. It also uses the `href` prop, but you have the additional option of passing a function to `href` that returns a path to navigate to:
 
 ```jsx
 function getPath ({navigate, location}) {
@@ -184,9 +175,7 @@ function getPath ({navigate, location}) {
 }
 
 //Navigating to /redirect will redirect you to the result of getPath
-<Route path="/redirect">
-  <Navigate href={getPath}/>
-</Route>
+<Route path="/redirect" element={  <Navigate href={getPath}/>} />
 ```
 
 ## Dynamic Routes
@@ -229,7 +218,7 @@ export default function User () {
 
   const [userData] = createResource(() => params.id, fetchUser);
 
-  return <a href={userData.twitter}>{userData.name}</a>
+  return <A href={userData.twitter}>{userData.name}</A>
 }
 ```
 
@@ -347,7 +336,7 @@ function PageWrapper () {
   return <div>
     <h1> We love our users! </h1>
     <Outlet/>
-    <Link href="/">Back Home</Link>
+    <A href="/">Back Home</A>
   </div>
 }
 
@@ -376,7 +365,7 @@ You don't have to use JSX to set up your routes; you can pass an object directly
 
 ```jsx
 import { lazy, render } from "voby";
-import { Router, useRoutes, Link } from "voby-router";
+import { Router, useRoutes, A } from "voby-router";
 
 const routes = [
   {
@@ -407,12 +396,12 @@ function App() {
   return (
     <>
       <h1>Awesome Site</h1>
-      <Link class="nav" href="/">
+      <A class="nav" href="/">
         Home
-      </Link>
-      <Link class="nav" href="/users">
+      </A>
+      <A class="nav" href="/users">
         Users
-      </Link>
+      </A>
       <Routes />
     </>
   );

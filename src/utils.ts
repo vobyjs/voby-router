@@ -4,7 +4,7 @@ import type { Params, PathMatch, Route, SetParams } from 'types';
 const hasSchemeRegex = /^(?:[a-z0-9]+:)?\/\//i;
 const trimPathRegex = /^\/+|\/+$/g;
 
-function normalize(path: string, omitSlash: boolean = false) {
+function normalize(path: string, omitSlash = false) {
   const s = path.replace(trimPathRegex, '');
   return s ? (omitSlash || /^[?#]/.test(s) ? s : '/' + s) : '';
 }
@@ -108,7 +108,7 @@ export function scoreRoute(route: Route): number {
 export function createMemoObject<T extends Record<string | symbol, unknown>>(
   fn: () => T
 ): T {
-  const map = new Map();
+  const map = new Map<string | symbol, ObservableReadonly<unknown>>();
   return new Proxy(<T>{}, {
     get(_, property) {
       if (!map.has(property)) {
@@ -117,7 +117,7 @@ export function createMemoObject<T extends Record<string | symbol, unknown>>(
           useMemo(() => fn()[property])
         );
       }
-      return map.get(property)();
+      return map.get(property)?.();
     },
     getOwnPropertyDescriptor() {
       return {
@@ -160,7 +160,7 @@ export function useSignal<T>(
 }
 
 export function expandOptionals(pattern: string): string[] {
-  let match = /(\/?\:[^\/]+)\?/.exec(pattern);
+  let match = /(\/?:[^/]+)\?/.exec(pattern);
   if (!match) return [pattern];
 
   let prefix = pattern.slice(0, match.index);
@@ -172,7 +172,7 @@ export function expandOptionals(pattern: string): string[] {
   // `/:a?/:b?/:c`? only has the unique expansion: `/`, `/:a`, `/:a/:b`, `/:a/:b/:c` and we can
   // discard `/:b`, `/:c`, `/:b/:c` by building them up in order and not recursing. This also helps
   // ensure predictability where earlier params have precidence.
-  while ((match = /^(\/\:[^\/]+)\?/.exec(suffix))) {
+  while ((match = /^(\/:[^/]+)\?/.exec(suffix))) {
     prefixes.push((prefix += match[1]));
     suffix = suffix.slice(match[0].length);
   }

@@ -2,7 +2,6 @@ import {
   $,
   createContext,
   useContext,
-  Observable,
   useMemo,
   ObservableReadonly,
   untrack,
@@ -97,7 +96,8 @@ export const useMatch = (
 
 export const useParams = <T extends Params>() => useRoute().params as T;
 
-export const useRouteData = <T>() => useRoute().data as T;
+type MaybeReturnType<T> = T extends (...args: unknown[]) => infer R ? R : T;
+export const useRouteData = <T>() => useRoute().data as MaybeReturnType<T>;
 
 export const useSearchParams = <T extends Params>(): [
   T,
@@ -112,7 +112,10 @@ export const useSearchParams = <T extends Params>(): [
     const searchString = untrack(() =>
       mergeSearchString(location.search, params)
     );
-    navigate(searchString, { scroll: false, ...options, resolve: true });
+    navigate(`${location.pathname}${searchString}`, {
+      scroll: false,
+      ...options,
+    });
   };
   return [location.query as T, setSearchParams];
 };
@@ -123,7 +126,7 @@ function asArray<T>(value: T | T[]): T[] {
 
 export function createRoutes(
   routeDef: RouteDefinition,
-  base: string = '',
+  base = '',
   fallback?: JSX.Component
 ): Route[] {
   const { component, data, children } = routeDef;
@@ -162,26 +165,7 @@ export function createRoutes(
   }, []);
 }
 
-//   return {
-//     originalPath,
-//     pattern,
-//     element: component
-//       ? () => createElement(component, {})
-//       : () => {
-//           const { element } = routeDef;
-//           return element === undefined && fallback
-//             ? createElement(fallback, {})
-//             : element;
-//         },
-//     preload: routeDef.component
-//       ? (component as MaybePreloadableComponent).preload
-//       : routeDef.preload,
-//     data,
-//     matcher: createMatcher(pattern, !isLeaf),
-//   };
-// }
-
-export function createBranch(routes: Route[], index: number = 0): Branch {
+export function createBranch(routes: Route[], index = 0): Branch {
   return {
     routes,
     score: scoreRoute(routes[routes.length - 1]) * 10000 - index,
@@ -205,7 +189,7 @@ export function createBranch(routes: Route[], index: number = 0): Branch {
 
 export function createBranches(
   routeDef: FunctionMaybe<RouteDefinition | RouteDefinition[]>,
-  base: string = '',
+  base = '',
   fallback?: JSX.Component,
   stack: Route[] = [],
   branches: Branch[] = []
@@ -214,7 +198,11 @@ export function createBranches(
 
   for (let i = 0, len = routeDefs.length; i < len; i++) {
     const def = routeDefs[i];
-    if (def && typeof def === 'object' && def.hasOwnProperty('path')) {
+    if (
+      def &&
+      typeof def === 'object' &&
+      Object.prototype.hasOwnProperty.call(def, 'path')
+    ) {
       const routes = createRoutes(def, base, fallback);
       for (const route of routes) {
         stack.push(route);
@@ -255,8 +243,8 @@ export function getRouteMatches(
 }
 let prevUrl = new URL('http://sar');
 export function createLocation(
-  path: Observable<string>,
-  state: Observable<any>
+  path: ObservableReadonly<string>,
+  state: ObservableReadonly<unknown>
 ): Location {
   const url = useMemo<URL>(
     () => {
@@ -291,7 +279,7 @@ export function createLocation(
       return hash();
     },
     get state() {
-      return state();
+      return Object.freeze(state());
     },
     get key() {
       return key();
@@ -302,7 +290,7 @@ export function createLocation(
 
 export function createRouterContext(
   integration?: RouterIntegration | LocationChangeSignal,
-  base: string = '',
+  base = '',
   data?: RouteDataFunc,
   out?: object
 ): RouterContext {
@@ -323,7 +311,7 @@ export function createRouterContext(
     : undefined;
 
   if (basePath === undefined) {
-    throw new Error(`${basePath} is not a valid base path`);
+    throw new Error(`Invalid base path`);
   } else if (basePath && !source().value) {
     setSource({ value: basePath, replace: true, scroll: false });
   }
@@ -368,11 +356,9 @@ export function createRouterContext(
       if (typeof to === 'number') {
         if (!to) {
           // A delta of 0 means stay at the current location, so it is ignored
-        } else if (utils.go) {
-          utils.go(to);
-        } else {
+        } else if (utils.go) utils.go(to);
+        else
           console.warn('Router integration does not support relative routing');
-        }
         return;
       }
 
@@ -425,7 +411,7 @@ export function createRouterContext(
     // Workaround for vite issue (https://github.com/vitejs/vite/issues/3803)
     route = route || useContext(RouteContextObj) || baseRoute;
     return (to: string | number, options?: Partial<NavigateOptions>) =>
-      navigateFromRoute(route!, to, options);
+      route && navigateFromRoute(route, to, options);
   }
 
   function navigateEnd(next: LocationChange) {
@@ -469,20 +455,17 @@ export function createRouterContext(
       .composedPath()
       .find((el) => el instanceof Node && el.nodeName.toUpperCase() === 'A') as
       | HTMLAnchorElement
-      | SVGAElement
       | undefined;
 
-    if (!a) return;
+    if (!a || !a.hasAttribute('link')) return;
 
-    const isSvg = a instanceof SVGAElement;
-    const href = isSvg ? a.href.baseVal : a.href;
-    const target = isSvg ? a.target.baseVal : a.target;
-    if (target || (!href && !a.hasAttribute('state'))) return;
+    const href = a.href;
+    if (a.target || (!href && !a.hasAttribute('state'))) return;
 
     const rel = (a.getAttribute('rel') || '').split(/\s+/);
     if (a.hasAttribute('download') || (rel && rel.includes('external'))) return;
 
-    const url = isSvg ? new URL(href, document.baseURI) : new URL(href);
+    const url = new URL(href);
     const pathname = urlDecode(url.pathname);
     if (
       url.origin !== window.location.origin ||
