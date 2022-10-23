@@ -189,11 +189,6 @@ export interface AnchorProps
   replace?: boolean;
   noScroll?: boolean;
   state?: unknown;
-  // export function Link(props: LinkProps) {
-  //   const to = useResolvedPath(() => props.href);
-  //   return <LinkBase {...props} to={to()} />;
-  // }
-  // export interface NavLinkProps extends LinkProps {
   inactiveClass?: string;
   activeClass?: string;
   end?: boolean;
@@ -202,14 +197,14 @@ export interface AnchorProps
 export function A({
   activeClass = 'active',
   inactiveClass = 'inactive',
+  children,
   class: class_,
   end,
-  href: href_,
+  href,
   state,
   ...rest
 }: AnchorProps) {
-  const to = useResolvedPath(() => href_);
-  const href = useHref(to);
+  const to = useResolvedPath(() => href);
   const location = useLocation();
   const isActive = useMemo(() => {
     const to_ = to();
@@ -223,7 +218,7 @@ export function A({
     <a
       link
       {...rest}
-      href={href() ?? href_}
+      href={useHref(to)() ?? href}
       state={JSON.stringify(state)}
       class={[
         {
@@ -233,7 +228,9 @@ export function A({
         class_,
       ]}
       aria-current={isActive() ? 'page' : undefined}
-    />
+    >
+      {children}
+    </a>
   );
 }
 
