@@ -220,14 +220,14 @@ export function A({
       {...rest}
       href={useHref(to)() ?? href}
       state={JSON.stringify(state)}
-      class={[
+      class={() => [
         {
           [inactiveClass]: !isActive(),
           [activeClass]: isActive(),
         },
         class_,
       ]}
-      aria-current={isActive() ? 'page' : undefined}
+      aria-current={() => isActive() ? 'page' : undefined}
     >
       {children}
     </a>
