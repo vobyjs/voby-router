@@ -161,7 +161,7 @@ The `<A>` tag also has an `active` class if its href matches the current locatio
 | state    | unknown | [Push this value](https://developer.mozilla.org/en-US/docs/Web/API/History/pushState) to the history stack when navigating  |
 | inactiveClass | string  | The class to show when the link is inactive (when the current location doesn't match the link) |
 | activeClass | string | The class to show when the link is active                                                                                                        |
-| end  | boolean | If `true`, only considers the link to be active when the curent location matches the `href` exactly; if `false`, check if the current location _starts with_ `href` |
+| end  | boolean | If `true`, only considers the link to be active when the current location matches the `href` exactly; if `false`, check if the current location _starts with_ `href` |
 
 
 ### The Navigate Component
